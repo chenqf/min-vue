@@ -6,13 +6,17 @@ import {
 
 
 export default class Watcher{
-    constructor(vm,expOrFn,cb,options){
+    constructor(vm,expOrFn,cb,options = {}){
+        // let {deep = false} = options;
         this.vm = vm;
-        if(isFn){
+        // this.deep = deep;
+        if(isFn(expOrFn)){
             this.getter = expOrFn;
         }else{
             this.getter = parsePath(expOrFn);
         }
+        this.deps = [];
+        this.depIds = new Set();
         this.cb = cb;
         this.value = this.get();
     }
@@ -26,6 +30,20 @@ export default class Watcher{
         const oldValue = this.value;
         this.value = this.get();
         this.cb.call(this.vm,this.value,oldValue)
+    }
+    addDep(dep){
+        let id = dep.id;
+        if(!this.depIds.has(id)){
+            this.depIds.add(id);
+            this.deps.push(dep);
+            dep.addSub(this)
+        }
+    }
+    teardown(){
+        let i = this.deps.length;
+        while(i--){
+            this.deps[i].removeSub(this);
+        }
     }
 }
 

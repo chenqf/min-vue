@@ -1,16 +1,22 @@
 
 
-
+let uid = 0;
 
 
 export default class Depend{
     constructor(){
+        this.id = uid++;
         this.subs = [];
     }
-    add(sub){
-        this.subs.indexOf(sub) < 0 && this.subs.push(sub)
+    depend(){
+        if(window.target){
+            window.target.addDep(this)
+        }
     }
-    remove(sub){
+    addSub(sub){
+        this.subs.push(sub)
+    }
+    removeSub(sub){
         let index = this.subs.indexOf(sub);
         if(index >= 0){
             this.subs.splice(index,1)
@@ -20,9 +26,5 @@ export default class Depend{
         const subs = this.subs.slice();
         subs.forEach(item=>item.update());
     }
-    depend(){
-        if(window.target){
-            this.add(window.target);
-        }
-    }
+
 }

@@ -17,7 +17,14 @@ window.vm = new Vue({
 })
 
 
-vm.$watch('d',function(newVal,oldVal){
+let unwatch = vm.$watch(function(){
+    return this.d[0].cqf + this.b;
+},function(newVal,oldVal){
     console.log('new:',newVal);
     console.log('old',oldVal);
-})
+},{immediate:true})
+
+
+setTimeout(()=>{
+    unwatch();
+},5000);
