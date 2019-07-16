@@ -10,7 +10,7 @@ import arrayMethods from './array.js'
 
 
 
-export default class Observer {
+export class Observer {
     constructor(value) {
         this.value = value;
         //数组收集依赖 getter 和 方法拦截器都可以取到
@@ -35,7 +35,7 @@ export default class Observer {
 }
 
 
-function defineReactive(obj, key, val) {
+export function defineReactive(obj, key, val) {
     if (isObject(val)) {
         new Observer(val)
     }
@@ -76,3 +76,8 @@ function observe(value,asRootData){
     }
     return ob;
 }
+
+
+
+
+

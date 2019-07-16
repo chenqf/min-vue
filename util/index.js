@@ -41,6 +41,10 @@ export function isObject(obj) {
     return typeof obj === 'object' && obj !== null;
 }
 
+export function isArray(val){
+    return Array.isArray(val)
+}
+
 export function isFn(val){
     return typeof val === 'function'
 }
@@ -63,6 +67,11 @@ export function isPlainObject(value) {
     }
     return Object.getPrototypeOf(value) === proto
 }
+
+export function isValidArrayIndex (val){
+    const n = parseFloat(String(val))
+    return n >= 0 && Math.floor(n) === n && isFinite(val)
+  }
 
 
 export const emptyObject = Object.freeze({})

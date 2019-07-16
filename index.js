@@ -2,29 +2,44 @@
 import Vue from './instance/index.js'
 
 
+//TODO 对象被覆盖后,子监听失效了
+// window.vm = new Vue({
+//     data:{
+//         a:1,
+//         b:2,
+//         c:{
+//             d:10
+//         }
+//     }
+// })
+
+
+// vm.$watch('c.d',function(newVal,oldVal){
+//     console.log('newVal:',newVal);
+//     console.log('oldVal:',oldVal);
+// })
+
+// vm.c = {d:11}
+// vm.c.d = 12
+
+
+
+
+
 window.vm = new Vue({
     data:{
         a:1,
         b:2,
-        c:3,
-        d:[{cqf:11},2,3,4],
-        e:{
-            f:{
-                g:123
-            }
+        c:{
+            d:10
         }
     }
 })
 
 
-let unwatch = vm.$watch(function(){
-    return this.d[0].cqf + this.b;
-},function(newVal,oldVal){
-    console.log('new:',newVal);
-    console.log('old',oldVal);
-},{immediate:true})
+vm.$watch('c',function(newVal,oldVal){
+    console.log('newVal:',newVal);
+    console.log('oldVal:',oldVal);
+})
 
-
-setTimeout(()=>{
-    unwatch();
-},5000);
+vm.$set(vm.c,'dd',100);
