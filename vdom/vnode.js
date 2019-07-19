@@ -157,6 +157,8 @@ function getChildFlags(children) {
 }
 
 
+http://hcysun.me/vue-design/zh/renderer.html#%E8%B4%A3%E4%BB%BB%E9%87%8D%E5%A4%A7%E7%9A%84%E6%B8%B2%E6%9F%93%E5%99%A8
+
 
 
 
