@@ -5,26 +5,20 @@ import {
 
 import {
     appendChild,
-    createTextNode
+    createTextNode,
+    createElementNS,
+    createElement,
+    queryTarget,
+    patchData
 } from "./opt.js";
 
 import {
     createTextVNode
 } from './vnode.js'
 
-import {
-    isObject,
-    isArray
-} from '../util/index.js'
 
 
-const styleSet = new Set([
-    'width',
-    'height',
-    'fontSize'
-])
 
-const domPropsRE = /\W|^(?:value|checked|selected|muted)$/
 
 
 export const mount = function (vNode, container, isSVG) {
@@ -63,51 +57,15 @@ export const mountElement = function (vNode, container, isSVG) {
     } = vNode;
 
     isSVG = isSVG || vNode.flags & VNodeFlags.ELEMENT_SVG
-    const el = isSVG ?
-        document.createElementNS('http://www.w3.org/2000/svg', tag) :
-        document.createElement(tag)
-
+    const el = isSVG ? createElementNS(tag):createElement(tag);
 
     vNode.el = el;
 
     //处理DOM属性
-    if (data) {
-        for (let key in data) {
-            if (data.hasOwnProperty(key)) {
-                switch (key) {
-                    case 'style': // TOOD style 处理还有问题
-                        for (let k in data.style) {
-                            el.style[k] = data.style[k];
-                        }
-                        break;
-                    case 'class':
-                        let classStr = getClassStr(data[key]);
-                        if (isSVG) {
-                            el.setAttribute('class', classStr)
-                        } else {
-                            el.className = classStr
-                        }
-                        break
-                    default:
-                        //处理事件
-                        if (key.slice(0, 2) === 'on') {
-                            el.addEventListener(key.slice(2), data[key])
-                        }
-                        //特殊属性,如单选复选的选中
-                        else if (domPropsRE.test(key)) {
-                            // 当作 DOM Prop 处理
-                            el[key] = data[key]
-                        }
-                        //其他属性
-                        else {
-                            // 当作 Attr 处理
-                            el.setAttribute(key, data[key])
-                        }
-                        break
-                }
-            }
-        }
+    for (let key in data) {
+        data.hasOwnProperty(key) && patchData(el,key,null,data[key],isSVG);
     }
+    
     //处理子节点
     if (childFlags !== ChildrenFlags.NO_CHILDREN) {
         //单节点
@@ -137,20 +95,20 @@ export const mountStateComponent = function (vNode, container, isSVG) {
     // vNode.tag 就是组件自身
     const instance = new vNode.tag();
     // 渲染 VNode
-    instance.$vnode = instance.render(); // render 返回组件的 VNode
+    instance.$vNode = instance.render(); // render 返回组件的 VNode
     // 挂载
-    mount(instance.$vnode, container, isSVG);
+    mount(instance.$vNode, container, isSVG);
     // el 属性值 和 组件实例的 $el 属性都引用组件的根DOM元素
-    instance.$el = vNode.el = instance.$vnode.el;
+    instance.$el = vNode.el = instance.$vNode.el;
 }
 
 export const mountFunctionComponent = function (vNode, container, isSVG) {
     // 获取 VNode
-    const $vnode = vNode.tag()
+    const $vNode = vNode.tag()
     // 挂载
-    mount($vnode, container, isSVG)
+    mount($vNode, container, isSVG)
     // el 元素引用该组件的根元素
-    vNode.el = $vnode.el
+    vNode.el = $vNode.el
 }
 
 export const mountText = function (vNode, container) {
@@ -194,7 +152,7 @@ export const mountPortal = function (vNode, container) {
     // 需要占位的DOM元素来实现
 
     //获取挂载点
-    const target = typeof tag === 'string' ? document.querySelector(tag) : tag;
+    const target = queryTarget(tag);
     //单个子元素
     if (childFlags & ChildrenFlags.SINGLE_V_NODE) {
         mount(children, target)
@@ -215,27 +173,3 @@ export const mountPortal = function (vNode, container) {
 
 
 
-function _getClassStr(obj, res = []) {
-    if (typeof obj === 'string') {
-        res.push(obj)
-    } else if (isArray(obj)) {
-        for (let i = 0; i < obj.length; i++) {
-            _getClassStr(obj[i], res);
-        }
-    } else if (isObject(obj)) {
-        for (let i in obj) {
-            if (obj.hasOwnProperty(i)) {
-                if (obj[i]) {
-                    _getClassStr(i, res)
-                }
-            }
-        }
-    }
-}
-
-function getClassStr(obj) {
-    let res = [];
-    _getClassStr(obj, res);
-
-    return res.length ? res.join(' ') : '';
-}

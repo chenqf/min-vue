@@ -8,9 +8,9 @@ import {removeChild} from './opt.js'
 //如果旧的 VNode 存在且新的 VNode 不存在，那就直接将 DOM 移除；
 //如果新旧 VNode 都存在，那就打补丁(patch)
 export default function(vNode,container){
-    const preVNode = container.vNode;
+    const prevVNode = container.vNode;
     //之前没有
-    if(preVNode === null || preVNode === undefined){
+    if(prevVNode === null || prevVNode === undefined){
         if(vNode){
             mount(vNode,container);
             container.vNode = vNode;
@@ -20,12 +20,12 @@ export default function(vNode,container){
     else{
         //比较对比
         if(vNode){
-            patch(preVNode,vNode,container);
+            patch(prevVNode,vNode,container);
             container.vNode = vNode;
         }
         //以前有,现在没有,删除
         else{
-            removeChild(container,preVNode.el);
+            removeChild(container,prevVNode.el);
             container.vNode = null;
         }
     }
