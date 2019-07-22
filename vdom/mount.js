@@ -9,6 +9,10 @@ import {
 } from "./opt.js";
 
 import {
+    createTextVNode
+} from './vnode.js'
+
+import {
     isObject,
     isArray
 } from '../util/index.js'
@@ -121,8 +125,32 @@ export const mountElement = function (vNode, container, isSVG) {
     appendChild(container, el);
 }
 
-export const mountComponent = function (vNode, container) {
+export const mountComponent = function (vNode, container, isSVG) {
+    if (vNode.flags & VNodeFlags.COMPONENT_STATE) {
+        mountStateComponent(vNode, container, isSVG);
+    } else {
+        mountFunctionComponent(vNode, container, isSVG);
+    }
+}
 
+export const mountStateComponent = function (vNode, container, isSVG) {
+    // vNode.tag 就是组件自身
+    const instance = new vNode.tag();
+    // 渲染 VNode
+    instance.$vnode = instance.render(); // render 返回组件的 VNode
+    // 挂载
+    mount(instance.$vnode, container, isSVG);
+    // el 属性值 和 组件实例的 $el 属性都引用组件的根DOM元素
+    instance.$el = vNode.el = instance.$vnode.el;
+}
+
+export const mountFunctionComponent = function (vNode, container, isSVG) {
+    // 获取 VNode
+    const $vnode = vNode.tag()
+    // 挂载
+    mount($vnode, container, isSVG)
+    // el 元素引用该组件的根元素
+    vNode.el = $vnode.el
 }
 
 export const mountText = function (vNode, container) {
@@ -137,26 +165,52 @@ export const mountFragment = function (vNode, container, isSVG) {
         children,
         childFlags
     } = vNode;
-    switch(childFlags){
+    switch (childFlags) {
         case ChildrenFlags.SINGLE_V_NODE:
-            mount(children,container,isSVG);
+            mount(children, container, isSVG);
             vNode.el = children.el;
             break;
         case ChildrenFlags.NO_CHILDREN:
-            const placeholder = createTextNode('');
-            mountText(placeholder,container);
-            vNode.el = placeholder;
+            const placeholder = createTextVNode('');
+            mountText(placeholder, container);
+            vNode.el = placeholder.el;
             break;
         default:
-            for(let i = 0;i<children.length; i++){
-                mount(children[i],container,isSVG);
+            for (let i = 0; i < children.length; i++) {
+                mount(children[i], container, isSVG);
             }
             vNode.el = children[0].el;
     }
 }
 
 export const mountPortal = function (vNode, container) {
+    const {
+        tag,
+        children,
+        childFlags
+    } = vNode;
 
+    // 虽然 Portal 的内容可以被渲染到任意位置，但它的行为仍然像普通的DOM元素一样，如事件的捕获/冒泡机制仍然按照代码所编写的DOM结构实施。
+    // 需要占位的DOM元素来实现
+
+    //获取挂载点
+    const target = typeof tag === 'string' ? document.querySelector(tag) : tag;
+    //单个子元素
+    if (childFlags & ChildrenFlags.SINGLE_V_NODE) {
+        mount(children, target)
+    }
+    //多个子元素
+    else if (childFlags & ChildrenFlags.MULTIPLE_V_NODES) {
+        for (let i = 0; i < children.length; i++) {
+            mount(children[i], target)
+        }
+    }
+    // 占位的空文本节点
+    const placeholder = createTextVNode('')
+    // 将该节点挂载到 container 中
+    mountText(placeholder, container)
+    // el 属性引用该节点
+    vNode.el = placeholder.el
 }
 
 
