@@ -51,16 +51,16 @@ const ChildrenFlags = {
     // 没有 children
     NO_CHILDREN: 1,
     // children 是单个 VNode
-    SINGLE_VNODE: 1 << 1,
+    SINGLE_V_NODE: 1 << 1,
 
     // children 是多个拥有 key 的 VNode
-    KEYED_VNODES: 1 << 2,
+    KEYED_V_NODES: 1 << 2,
     // children 是多个没有 key 的 VNode
-    NONE_KEYED_VNODES: 1 << 3
+    NONE_KEYED_V_NODES: 1 << 3
 }
 
 // 多个子元素
-ChildrenFlags.MULTIPLE_VNODES = ChildrenFlags.KEYED_VNODES | ChildrenFlags.NONE_KEYED_VNODES
+ChildrenFlags.MULTIPLE_V_NODES = ChildrenFlags.KEYED_V_NODES | ChildrenFlags.NONE_KEYED_V_NODES
 
 
 export {

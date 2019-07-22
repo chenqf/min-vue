@@ -1,4 +1,7 @@
-import { VNodeFlags, ChildrenFlags } from './flags.js'
+import {
+    VNodeFlags,
+    ChildrenFlags
+} from './flags.js'
 
 export const Fragment = Symbol()
 export const Portal = Symbol()
@@ -56,9 +59,51 @@ VNode 内容:
 //不考虑文本的情况,如果是文本,自动生成一下
 export const h = function (tag, data = null, children = null) {
     //确定 flags
-    let flags = getFlags(tag);
+    let flags = null
+    if (typeof tag === 'string') {
+        flags = tag === 'svg' ? VNodeFlags.ELEMENT_SVG : VNodeFlags.ELEMENT_HTML
+    } else if (tag === Fragment) {
+        flags = VNodeFlags.FRAGMENT
+    } else if (tag === Portal) {
+        flags = VNodeFlags.PORTAL
+        tag = data && data.target // Portal 挂载的目标
+    } else if (typeof tag === 'function') {
+        // 有状态组件会继承拥有render函数的基类
+        flags = tag.prototype && tag.prototype.render ?
+            VNodeFlags.COMPONENT_STATE_NORMAL // 有状态组件
+            :
+            VNodeFlags.COMPONENT_FUNCTIONAL // 无状态组件
+    }
+    
     // 确定 childFlags
-    let childFlags = getChildFlags(children);
+    let childFlags = null;
+    if (Array.isArray(children)) {
+        let {
+            length
+        } = children;
+        if (length === 0) {
+            //没有 children
+            childFlags = ChildrenFlags.NO_CHILDREN;
+        } else if (length === 1) {
+            //单个子节点
+            childFlags = ChildrenFlags.SINGLE_V_NODE;
+            children = children[0];
+        } else {
+            // 多个子节点，且子节点使用key
+            childFlags = ChildrenFlags.KEYED_V_NODES
+            children = normalizeVNodes(children)
+        }
+    } else if (children === null || children === undefined) {
+        //没有 children
+        childFlags = ChildrenFlags.NO_CHILDREN;
+    } else if (children._isVNode) {
+        // 单个子节点
+        childFlags = ChildrenFlags.SINGLE_V_NODE
+    } else {
+        // 其他情况都作为文本节点处理，即单个子节点，会调用 createTextVNode 创建纯文本类型的 VNode
+        childFlags = ChildrenFlags.SINGLE_V_NODE
+        children = createTextVNode(children + '')
+    }
 
     return {
         _isVNode: true,
@@ -72,7 +117,7 @@ export const h = function (tag, data = null, children = null) {
 }
 
 
-
+//处理子元素列表
 function normalizeVNodes(children) {
     const newChildren = []
     // 遍历 children
@@ -84,9 +129,10 @@ function normalizeVNodes(children) {
         }
         newChildren.push(child)
     }
-    // 返回新的children，此时 children 的类型就是 ChildrenFlags.KEYED_VNODES
+    // 返回新的children，此时 children 的类型就是 ChildrenFlags.KEYED_V_NODES
     return newChildren
 }
+
 
 //创建一个纯文本的VNode
 function createTextVNode(text) {
@@ -105,59 +151,6 @@ function createTextVNode(text) {
 }
 
 
-function getFlags(tag) {
-    let flags = null
-    if (typeof tag === 'string') {
-        flags = tag === 'svg' ? VNodeFlags.ELEMENT_SVG : VNodeFlags.ELEMENT_HTML
-    } else if (tag === Fragment) {
-        flags = VNodeFlags.FRAGMENT
-    } else if (tag === Portal) {
-        flags = VNodeFlags.PORTAL
-        tag = data && data.target // Portal 挂载的目标
-    } else if (typeof tag === 'function') {
-        // 有状态组件会继承拥有render函数的基类
-        flags = tag.prototype && tag.prototype.render ?
-            VNodeFlags.COMPONENT_STATE_NORMAL // 有状态组件
-            :
-            VNodeFlags.COMPONENT_FUNCTIONAL // 无状态组件
-    }
-    return tag;
-}
-
-function getChildFlags(children) {
-    let childFlags = null;
-    if (Array.isArray(children)) {
-        let {
-            length
-        } = children;
-        if (length === 0) {
-            //没有 children
-            childFlags = ChildrenFlags.NO_CHILDREN;
-        } else if (length === 1) {
-            //单个子节点
-            childFlags = ChildrenFlags.SINGLE_VNODE;
-            children = children[0];
-        } else {
-            // 多个子节点，且子节点使用key
-            childFlags = ChildrenFlags.KEYED_VNODES
-            children = normalizeVNodes(children)
-        }
-    } else if (children === null || children === undefined) {
-        //没有 children
-        childFlags = ChildrenFlags.NO_CHILDREN;
-    } else if (children._isVNode) {
-        // 单个子节点
-        childFlags = ChildrenFlags.SINGLE_VNODE
-    } else {
-        // 其他情况都作为文本节点处理，即单个子节点，会调用 createTextVNode 创建纯文本类型的 VNode
-        childFlags = ChildrenFlags.SINGLE_VNODE
-        children = createTextVNode(children + '')
-    }
-    return childFlags;
-}
-
-
-http://hcysun.me/vue-design/zh/renderer.html#%E8%B4%A3%E4%BB%BB%E9%87%8D%E5%A4%A7%E7%9A%84%E6%B8%B2%E6%9F%93%E5%99%A8
 
 
 
