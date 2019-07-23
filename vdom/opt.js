@@ -26,9 +26,14 @@ export const appendChild = function (parent, element) {
     return parent.appendChild(element)
 }
 
-//插入节点
+//插入节点 在 refElement 之前插入 element  (refElement 为空,代表加入到末尾)
 export const insertBefore = function (parent, element, refElement) {
     return parent.insertBefore(element, refElement)
+}
+
+//获取下一个兄弟节点
+export const getNextSibling = function(element){
+    return element.nextSibling;
 }
 
 

@@ -10,7 +10,8 @@ import {
     createElement,
     queryTarget,
     patchData,
-    getParentNode
+    getParentNode,
+    insertBefore
 } from "./opt.js";
 
 import {
@@ -23,13 +24,13 @@ import { patch } from "./patch.js";
 
 
 
-export const mount = function (vNode, container, isSVG) {
+export const mount = function (vNode, container, isSVG,refNode) {
     let {
         flags
     } = vNode;
     // 挂载普通标签
     if (flags & VNodeFlags.ELEMENT) {
-        mountElement(vNode, container, isSVG)
+        mountElement(vNode, container, isSVG,refNode)
     }
     //挂载组件
     else if (flags & VNodeFlags.COMPONENT) {
@@ -49,7 +50,7 @@ export const mount = function (vNode, container, isSVG) {
     }
 }
 
-export const mountElement = function (vNode, container, isSVG) {
+export const mountElement = function (vNode, container, isSVG,refNode) {
 
     let {
         tag,
@@ -82,7 +83,7 @@ export const mountElement = function (vNode, container, isSVG) {
         }
     }
 
-    appendChild(container, el);
+    refNode ? insertBefore(container,el,refNode) : appendChild(container, el);
 }
 
 export const mountComponent = function (vNode, container, isSVG) {

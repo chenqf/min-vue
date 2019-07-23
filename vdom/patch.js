@@ -11,7 +11,9 @@ import {
     removeChild,
     patchData,
     queryTarget,
-    appendChild
+    appendChild,
+    insertBefore,
+    getNextSibling
 } from './opt.js'
 
 
@@ -163,18 +165,97 @@ export const patchChildren = function (prevChildFlags, nextChildFlags, prevChild
                 //旧:多个子节点 && 新:多个子节点
                 default:
                     // DIFF 
-                    // 遍历旧的子节点，将其全部移除
-                    for (let i = 0; i < prevChildren.length; i++) {
-                        removeChild(container,prevChildren[i].el)
-                    }
-                    // 遍历新的子节点，将其全部添加
-                    for (let i = 0; i < nextChildren.length; i++) {
-                        mount(nextChildren[i], container)
-                    }
+                    diff4(prevChildren,nextChildren,container)
+
                     break;
             }
             break;
 
+    }
+}
+
+
+export const diff1 = function(prevChildren,nextChildren,container){
+    // 遍历旧的子节点，将其全部移除
+    for (let i = 0; i < prevChildren.length; i++) {
+        removeChild(container,prevChildren[i].el)
+    }
+    // 遍历新的子节点，将其全部添加
+    for (let i = 0; i < nextChildren.length; i++) {
+        mount(nextChildren[i], container)
+    }
+}
+
+//不存在key时的比较算法
+export const diff2 = function(prevChildren,nextChildren,container){
+    let prevLen = prevChildren.length;
+    let nextLen = nextChildren.length;
+    let commonLen = Math.min(prevLen,nextLen);
+    for(let i = 0;i<commonLen;i++){
+        patch(prevChildren[i],nextChildren[i],container)
+    }
+    if(nextLen > prevLen){
+        for(let i = commonLen; i<nextLen; i++){
+            mount(nextChildren[i],container);
+        }
+    }else if(prevLen > nextLen){
+        for(let i = commonLen; i<prevLen; i++){
+            removeChild(container,prevChildren[i].el)
+        }
+    }
+}
+
+//寻找过程中旧VNode中的最大索引值
+export const diff3 = function(prevChildren,nextChildren,container){
+    let lastIndex = 0;
+    for(let i = 0; i<nextChildren.length; i++){
+        let nextVNode = nextChildren[i];
+        let j = 0;
+        let find = false;
+        for(;j<prevChildren.length; j++){
+            let prevVNode = prevChildren[j];
+            if(nextVNode.key === prevVNode.key){
+                find = true;
+                patch(prevVNode,nextVNode,container);
+                //需要移动
+                if(j<lastIndex){
+                    let refElement = getNextSibling(nextChildren[i - 1].el);
+                    insertBefore(container,prevVNode.el,refElement)
+                }else{
+                    lastIndex = j;   
+                }
+                break;
+            }
+        }
+        if(!find){
+            let refNode = i === 0 ? prevChildren[0].el : getNextSibling(nextChildren[i - 1].el);
+            mount(nextVNode,container,false,refNode)
+        }
+    }
+    //移除不存在的节点
+    for(let i = 0; i<prevChildren.length; i++){
+        let prevVNode = prevChildren[i];
+        let has = nextChildren.find(nextVNode => nextVNode.key === prevVNode.key);
+        if(!has){
+            removeChild(container,prevVNode.el)
+        }
+    }
+}
+
+// 双端比较
+export const diff4 = function(prevChildren,nextChildren,container){
+    let oldStartIdx = 0;
+    let newStartIdx = 0;
+    let oldEndIdx = prevChildren.length - 1;
+    let newEndIdx = nextChildren.length - 1;
+
+    let oldStartVNode = prevChildren[oldStartIdx];
+    let newStartVNode = nextChildren[newStartIdx];
+    let oldEndVNode = prevChildren[oldEndIdx];
+    let newEndVNode = nextChildren[newEndIdx];
+
+    while(oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx){
+        
     }
 }
 
