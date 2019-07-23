@@ -6,45 +6,33 @@ import {
 } from './vdom/vnode.js';
 import render from './vdom/render.js';
 
+// 子组件 - 函数式组件
+function MyFunctionalComp(props) {
+  return h('div', null, props.text)
+}
+// 父组件的 render 函数中渲染了 MyFunctionalComp 子组件
+class ParentComponent {
+  localState = 'one'
+
+  mounted() {
+    setTimeout(() => {
+      this.localState = 'two'
+      this._update()
+    }, 2000)
+  }
+
+  render() {
+    return h(MyFunctionalComp, {
+      text: this.localState
+    })
+  }
+}
 
 
+// 有状态组件 VNode
+const compVNode = h(ParentComponent)
 
-
-
-let container = document.getElementById('container');
-
-// 旧的 VNode
-const prevVNode = h('div', {
-    style: {
-        width: '100px',
-        height: '100px',
-        backgroundColor: 'red'
-    },
-    id:'123',
-    class:{ddd:true},
-    onclick:function(){
-        console.log('1');
-    }
-})
-
-// 新的 VNode
-const nextVNode = h('div', {
-    style: {
-        width: '100px',
-        height: '100px',
-        border: '1px solid green'
-    },
-    id:'3333333333',
-    class:['123','321'],
-    onclick:function(){
-        console.log('2');
-    }
-})
-
-
-
-
-render(prevVNode, container)
-setTimeout(() => {
-    render(nextVNode, container)
-}, 2000);
+render(compVNode, document.getElementById('container'))
+// setTimeout(() => {
+//     render(nextVNode, container)
+// }, 2000);
