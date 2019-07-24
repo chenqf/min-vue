@@ -173,32 +173,43 @@ export const vue2Diff = function(prevChildren,nextChildren,container){
     }
 }
 
+
+//未完成
 export const vue3Diff = function(prevChildren,nextChildren,container){
-    //更新相同前缀
-    let j = 0;
-    let prevVNode = prevChildren[j];
-    let nextVNode = nextChildren[j];
-    while(prevVNode.key === nextVNode.key){
-        patch(prevVNode,nextVNode,container);
-        j++;
-        prevVNode = prevChildren[j];
-        nextVNode = nextChildren[j];
-    }
+    outer:{
+        //更新相同前缀
+        let j = 0;
+        let prevVNode = prevChildren[j];
+        let nextVNode = nextChildren[j];
+        while(prevVNode.key === nextVNode.key){
+            patch(prevVNode,nextVNode,container);
+            j++;
+            if(j > prevEndIdx || j > nextEndIdx){
+                break outer;
+            }
+            prevVNode = prevChildren[j];
+            nextVNode = nextChildren[j];
+        }
 
-    //更新相同后缀
-    let prevEndIdx = prevChildren.length - 1;
-    let nextEndIdx = nextChildren.length - 1;
-    
-    prevVNode = prevChildren[prevEndIdx];
-    nextVNode = nextChildren[nextEndIdx];
+        //更新相同后缀
+        let prevEndIdx = prevChildren.length - 1;
+        let nextEndIdx = nextChildren.length - 1;
 
-    while(prevVNode.key === nextVNode.key){
-        patch(prevVNode,nextVNode,container);
-        prevEndIdx--;
-        nextEndIdx--;
         prevVNode = prevChildren[prevEndIdx];
         nextVNode = nextChildren[nextEndIdx];
+
+        while(prevVNode.key === nextVNode.key){
+            patch(prevVNode,nextVNode,container);
+            prevEndIdx--;
+            nextEndIdx--;
+            if(j > prevEndIdx || j > nextEndIdx){
+                break outer;
+            }
+            prevVNode = prevChildren[prevEndIdx];
+            nextVNode = nextChildren[nextEndIdx];
+        }
     }
+    
 
     //仅新增
     if(j > prevEndIdx){
@@ -214,4 +225,57 @@ export const vue3Diff = function(prevChildren,nextChildren,container){
             removeChild(container,prevChildren[j++].el);
         }
     }
+    //其他情况
+    else{
+        // 构造 sources 数组 用于存储 newVNode 在 oldVNode 中的位置
+        const nextLeft = nextEndIdx - j + 1  // 新 children 中剩余未处理节点的数量
+        let sources = Array.from({length:nextLeft}).map(()=>-1);
+
+        let moved = false;
+        let pos = 0;
+        let patched = 0
+        //构建索引表 新节点的key对应的索引位置
+        let keyIndex = {};
+        for(let i = j; i <= nextEndIdx; i++){
+            keyIndex[nextChildren[i].key] = i;
+        }
+        //先遍历旧节点
+        for(let i = j; i <= prevEndIdx; i++){
+            const prevVNode = prevChildren[i];
+
+            if(patched < nextLeft){
+                // 通过索引表快速找到新 children 中具有相同 key 的节点的位置
+                const k = keyIndex[prevVNode.key];
+                //找到
+                if(typeof k !== 'undefined'){
+                    const nextVNode = nextChildren[k]
+                    patch(prevVNode,nextVNode,container);
+                    patched++
+                    sources[k - j] = i;
+                    if(k < pos){
+                        moved = true;
+                    }else{
+                        pos = k;
+                    }
+                }
+                //没找到,删除旧节点
+                else{
+                    removeChild(container,prevVNode.el)
+                }
+            }else{
+                removeChild(container,prevVNode.el)
+            }
+        }
+
+        //需要移动
+        if(moved){
+            // 计算最长递增子序列
+            const seq = lis(sources) // [ 0, 1 ]
+        }
+    }   
+}
+
+
+function lis(sources){
+
 }

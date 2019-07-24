@@ -16,9 +16,14 @@ export const setTextContent = function (element, text) {
     return element.setTextContent = text;
 }
 
-//删除节点
+//TODO 删除节点
 export const removeChild = function (parent, element) {
     return parent.removeChild(element)
+}
+
+//TODO 区分不同类型
+export const removeVNode = function(parent,vNode){
+
 }
 
 //追加节点
