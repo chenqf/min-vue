@@ -91,3 +91,14 @@ export function isTrue (v){
 export function isFalse (v){
   return v === false
 }
+
+export function makeMap(strings,expectsLowerCase = false){
+    const map = Object.create(null)
+    const list = strings.split(',');
+    for(let i = 0; i<list.length; i++){
+        map[list[i]] = true
+    }
+    return expectsLowerCase
+      ? val => map[val.toLowerCase()]
+      : val => map[val]
+}
