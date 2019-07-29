@@ -102,3 +102,7 @@ export function makeMap(strings,expectsLowerCase = false){
       ? val => map[val.toLowerCase()]
       : val => map[val]
 }
+
+export function no(){
+    return false;
+}

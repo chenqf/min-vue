@@ -1,6 +1,12 @@
 import {
     parseHTML
 } from "./html-parse.js";
+import {
+    no
+} from "../util/index.js";
+
+
+
 
 // 事件
 export const onRE = /^@|^v-on:/
@@ -21,7 +27,8 @@ export const modifierRE = /\.[^.]+/g
 // 用于解码 https://github.com/mathiasbynens/he
 // TODO export const decodeHTMLCached = cached(he.decode);
 export const decodeHTMLCached = (str) => str;
-
+// 匹配默认的分隔符 "{{}}"
+export const defaultTagRE = /\{\{((?:.|\n)+?)\}\}/g
 
 export function makeAttrsMap(attrs) {
     const map = {}
@@ -42,22 +49,51 @@ export function createASTElement(tag, attrs = [], parent) {
     }
 }
 
+export function parseText(text) {
+    const defaultTagRE = /\{\{((?:.|\n)+?)\}\}/g
+    if (!defaultTagRE.test(text)) {
+        return void 0;
+    }
+
+    const tokens = [];
+    let lastIndex = defaultTagRE.lastIndex = 0;
+    let match, index;
+    while (match = defaultTagRE.exec(text)) {
+        index = match.index;
+        if (index > lastIndex) {
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+        }
+        tokens.push(`_s(${match[1].trim()})`);
+        lastIndex = index + match[0].length;
+    }
+    if (lastIndex < text.length) {
+        tokens.push(JSON.stringify(text.slice(lastIndex)))
+    }
+    return tokens.join('+')
+}
+
 
 export function parse(template) {
-    let currentParent;
-    let root;
-    let stack = [];
+    let platformIsPreTag = no
+    let platformMustUseProp = no
+    let platformGetTagNamespace = no
+
+    // transforms = pluckModuleFunction(options.modules, 'transformNode')
+    // preTransforms = pluckModuleFunction(options.modules, 'preTransformNode')
+    // postTransforms = pluckModuleFunction(options.modules, 'postTransformNode')
+
+    const stack = []
+    const preserveWhitespace = false; // 是否放弃标签间的空格
+    let root
+    let currentParent
+    let inVPre = false // 识当前解析的标签是否在拥有 v-pre 的标签之内
+    let inPre = false // inPre 变量用来标识当前正在解析的标签是否在 <pre></pre> 标签之内
+    let warned = false
 
     parseHTML(template, {
         // shouldKeepComment:true,//启用注释
         start(tag, attrs, unary, start, end) {
-            const element = {
-                type: 1,
-                tag: tag,
-                parent: null,
-                attrsList: attrs,
-                children: []
-            }
+            const element = createASTElement(tag, attrs, currentParent)
             if (!root) {
                 root = element
             } else if (currentParent) {
@@ -74,8 +110,23 @@ export function parse(template) {
             currentParent = stack[stack.length - 1];
         },
         chars(text) {
-            console.log('text:', text);
-
+            text = text.trim();
+            if (text) {
+                const children = currentParent.children;
+                let expression = parseText(text);
+                if (expression) {
+                    children.push({
+                        type: 2,
+                        expression,
+                        text
+                    })
+                } else {
+                    children.push({
+                        type: 3,
+                        text
+                    })
+                }
+            }
         },
         comment(text) {
             console.log('comment: ', text)
@@ -83,4 +134,20 @@ export function parse(template) {
     })
 
     return root;
+}
+
+
+export const getVNodeCode = function (node) {
+    if (node.type === 1) {
+        return `h(${JSON.stringify(node.tag)},${JSON.stringify(node.attrsMap)},${node.children.length>1?'[' + node.children.map(n=>getVNodeCode(n)) + ']':getVNodeCode(node.children[0])})`
+    } else if (node.type === 2) {
+        return JSON.stringify(node.text)
+    } else if (node.type === 3) {
+        return JSON.stringify(node.text)
+    }
+}
+
+export const createVNodeFnByAST = function(node){
+    let code = getVNodeCode(node);    
+    return new Function('h','return ' + code);
 }
